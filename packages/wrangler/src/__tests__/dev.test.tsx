@@ -144,6 +144,27 @@ describe("wrangler dev", () => {
     });
   });
 
+  describe("routes", () => {
+    it("should pass routes to <Dev/>", async () => {
+      fs.writeFileSync("index.js", `export default {};`);
+
+      // config.routes
+      mockGetZones("5.some-host.com", [{ id: "some-zone-id-5" }]);
+      writeWranglerToml({
+        main: "index.js",
+        routes: ["http://5.some-host.com/some/path/*"],
+      });
+      await runWrangler("dev");
+      expect((Dev as jest.Mock).mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          host: "5.some-host.com",
+          zone: "some-zone-id-5",
+          routes: ["http://5.some-host.com/some/path/*"],
+        })
+      );
+    });
+  });
+
   describe("host", () => {
     it("should resolve a host to its zone", async () => {
       writeWranglerToml({
@@ -156,6 +177,7 @@ describe("wrangler dev", () => {
         expect.objectContaining({
           host: "some-host.com",
           zone: "some-zone-id",
+          routes: undefined,
         })
       );
     });
@@ -217,6 +239,10 @@ describe("wrangler dev", () => {
       mockGetZones("some-host.com", [{ id: "some-zone-id" }]);
       await runWrangler("dev --env staging");
       expect((Dev as jest.Mock).mock.calls[0][0].host).toEqual("some-host.com");
+      expect((Dev as jest.Mock).mock.calls[0][0].routes).toEqual([
+        "http://some-host.com/some/path/*",
+        "http://some-other-host.com/path/*",
+      ]);
     });
 
     it("should strip leading `*` from given host when deducing a zone id", async () => {
@@ -254,6 +280,9 @@ describe("wrangler dev", () => {
         expect.objectContaining({
           host: "some-domain.com",
           zone: "some-zone-id",
+          routes: [
+            { pattern: "https://some-domain.com/*", zone_id: "some-zone-id" },
+          ],
         })
       );
     });
@@ -273,6 +302,12 @@ describe("wrangler dev", () => {
           // note that it uses the provided zone_name as a host too
           host: "some-zone.com",
           zone: "a-zone-id",
+          routes: [
+            {
+              pattern: "https://some-domain.com/*",
+              zone_name: "some-zone.com",
+            },
+          ],
         })
       );
     });
@@ -290,6 +325,7 @@ describe("wrangler dev", () => {
         expect.objectContaining({
           host: "111.222.333.some-host.com",
           zone: "some-zone-id",
+          routes: undefined,
         })
       );
     });
@@ -310,6 +346,7 @@ describe("wrangler dev", () => {
         expect.objectContaining({
           host: "5.some-host.com",
           zone: "some-zone-id-5",
+          routes: ["http://5.some-host.com/some/path/*"],
         })
       );
       (Dev as jest.Mock).mockClear();
@@ -325,6 +362,7 @@ describe("wrangler dev", () => {
         expect.objectContaining({
           host: "4.some-host.com",
           zone: "some-zone-id-4",
+          routes: ["https://4.some-host.com/some/path/*"],
         })
       );
       (Dev as jest.Mock).mockClear();
@@ -340,6 +378,7 @@ describe("wrangler dev", () => {
         expect.objectContaining({
           host: "3.some-host.com",
           zone: "some-zone-id-3",
+          routes: ["http://3.some-host.com/some/path/*"],
         })
       );
       (Dev as jest.Mock).mockClear();
@@ -358,6 +397,7 @@ describe("wrangler dev", () => {
         expect.objectContaining({
           host: "2.some-host.com",
           zone: "some-zone-id-2",
+          routes: ["http://3.some-host.com/some/path/*"],
         })
       );
       (Dev as jest.Mock).mockClear();
@@ -378,6 +418,7 @@ describe("wrangler dev", () => {
         expect.objectContaining({
           host: "1.some-host.com",
           zone: "some-zone-id-1",
+          routes: ["http://3.some-host.com/some/path/*"],
         })
       );
       (Dev as jest.Mock).mockClear();

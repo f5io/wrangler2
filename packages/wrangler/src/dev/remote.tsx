@@ -7,6 +7,7 @@ import useInspector from "../inspect";
 import { logger } from "../logger";
 import { usePreviewServer } from "../proxy";
 import { syncAssets } from "../sites";
+import type { Route } from "../config/environment";
 import type { CfPreviewToken } from "../create-worker-preview";
 import type { AssetPaths } from "../sites";
 import type { CfModule, CfWorkerInit, CfScriptFormat } from "../worker";
@@ -32,6 +33,7 @@ export function Remote(props: {
   legacyEnv: boolean | undefined;
   zone: string | undefined;
   host: string | undefined;
+  routes: Route[] | undefined;
 }) {
   assert(props.accountId, "accountId is required");
   assert(props.apiToken, "apiToken is required");
@@ -52,6 +54,7 @@ export function Remote(props: {
     legacyEnv: props.legacyEnv,
     zone: props.zone,
     host: props.host,
+    routes: props.routes,
   });
 
   usePreviewServer({
@@ -87,6 +90,7 @@ export function useWorker(props: {
   legacyEnv: boolean | undefined;
   zone: string | undefined;
   host: string | undefined;
+  routes: Route[] | undefined;
 }): CfPreviewToken | undefined {
   const {
     name,
@@ -184,6 +188,7 @@ export function useWorker(props: {
             legacyEnv: props.legacyEnv,
             zone: props.zone,
             host: props.host,
+            routes: props.routes,
           },
           abortController.signal
         )
@@ -231,6 +236,7 @@ export function useWorker(props: {
     props.legacyEnv,
     props.zone,
     props.host,
+    props.routes,
   ]);
   return token;
 }

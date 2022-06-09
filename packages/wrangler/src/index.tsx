@@ -69,6 +69,7 @@ import { whoami } from "./whoami";
 import { getZoneIdFromHost, getZoneForRoute } from "./zones";
 
 import type { Config } from "./config";
+import type { Route } from "./config/environment";
 import type { TailCLIFilters } from "./tail";
 import type { RawData } from "ws";
 import type { CommandModule } from "yargs";
@@ -1090,14 +1091,16 @@ function createCLIParser(argv: string[]) {
       // Compute zone info from the `host` and `route` args and config;
       let host = args.host || config.dev.host;
       let zoneId: string | undefined;
+      const routes: Route[] | undefined =
+        args.routes || (config.route && [config.route]) || config.routes;
 
       if (!args.local) {
         if (host) {
           zoneId = await getZoneIdFromHost(host);
         }
-        const routes = args.routes || config.route || config.routes;
+
         if (!zoneId && routes) {
-          const firstRoute = Array.isArray(routes) ? routes[0] : routes;
+          const firstRoute = routes[0];
           const zone = await getZoneForRoute(firstRoute);
           if (zone) {
             zoneId = zone.id;
@@ -1184,6 +1187,7 @@ function createCLIParser(argv: string[]) {
           env={args.env}
           zone={zoneId}
           host={host}
+          routes={routes}
           rules={getRules(config)}
           legacyEnv={isLegacyEnv(config)}
           minify={args.minify ?? config.minify}
@@ -1613,6 +1617,7 @@ function createCLIParser(argv: string[]) {
           env={args.env}
           zone={undefined}
           host={undefined}
+          routes={undefined}
           legacyEnv={isLegacyEnv(config)}
           build={config.build || {}}
           minify={undefined}

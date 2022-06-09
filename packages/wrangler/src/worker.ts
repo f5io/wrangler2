@@ -1,3 +1,5 @@
+import type { Route } from "./config/environment";
+
 /**
  * A Cloudflare account.
  */
@@ -178,4 +180,5 @@ export interface CfWorkerContext {
   legacyEnv: boolean | undefined;
   zone: string | undefined;
   host: string | undefined;
+  routes: Route[] | undefined;
 }
