@@ -175,7 +175,8 @@ function getEntryPoint(
             path.join(__dirname, "../templates/static-asset-facade.js"),
             "utf8"
           )
-          .replace("__ENTRY_POINT__", entryFile),
+          // on windows, escape backslashes in the path (`\`)
+          .replace("__ENTRY_POINT__", entryFile.replaceAll("\\", "\\\\")),
         sourcefile: "static-asset-facade.js",
         resolveDir: path.dirname(entryFile),
       },

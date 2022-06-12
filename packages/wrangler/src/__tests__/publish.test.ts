@@ -1404,6 +1404,69 @@ addEventListener('fetch', event => {});`
       expect(std.err).toMatchInlineSnapshot(`""`);
     });
 
+    it("should upload all the files in the directory specified by `--experimental-public`", async () => {
+      const assets = [
+        { filePath: "assets/file-1.txt", content: "Content of file-1" },
+        { filePath: "assets/file-2.txt", content: "Content of file-2" },
+      ];
+      const kvNamespace = {
+        title: "__test-name-workers_sites_assets",
+        id: "__test-name-workers_sites_assets-id",
+      };
+      writeWranglerToml({
+        main: "./index.js",
+      });
+      writeWorkerSource();
+      writeAssets(assets);
+      mockUploadWorkerRequest({
+        expectedMainModule: "stdin.js",
+      });
+      mockSubDomainRequest();
+      mockListKVNamespacesRequest(kvNamespace);
+      mockKeyListRequest(kvNamespace.id, []);
+      mockUploadAssetsToKVRequest(kvNamespace.id, assets);
+      await runWrangler("publish --experimental-public assets");
+
+      expect(std.out).toMatchInlineSnapshot(`
+        "Reading assets/file-1.txt...
+        Uploading as assets/file-1.2ca234f380.txt...
+        Reading assets/file-2.txt...
+        Uploading as assets/file-2.5938485188.txt...
+        ↗️  Done syncing assets
+        Uploaded test-name (TIMINGS)
+        Published test-name (TIMINGS)
+          test-name.test-sub-domain.workers.dev"
+      `);
+      expect(std.err).toMatchInlineSnapshot(`""`);
+    });
+
+    it("should error if --experimental-public and --site are used together", async () => {
+      writeWranglerToml({
+        main: "./index.js",
+      });
+      writeWorkerSource();
+      await expect(
+        runWrangler("publish --experimental-public abc --site xyz")
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"Cannot use --experimental-public and a Site configuration together."`
+      );
+    });
+
+    it("should error if --experimental-public and config.site are used together", async () => {
+      writeWranglerToml({
+        main: "./index.js",
+        site: {
+          bucket: "xyz",
+        },
+      });
+      writeWorkerSource();
+      await expect(
+        runWrangler("publish --experimental-public abc")
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"Cannot use --experimental-public and a Site configuration together."`
+      );
+    });
+
     it("should not contain backslash for assets with nested directories", async () => {
       const assets = [
         { filePath: "subdir/file-1.txt", content: "Content of file-1" },
@@ -5311,6 +5374,7 @@ function mockUploadWorkerRequest(
   options: {
     available_on_subdomain?: boolean;
     expectedEntry?: string;
+    expectedMainModule?: string;
     expectedType?: "esm" | "sw";
     expectedBindings?: unknown;
     expectedModules?: Record<string, string>;
@@ -5324,6 +5388,7 @@ function mockUploadWorkerRequest(
   const {
     available_on_subdomain = true,
     expectedEntry,
+    expectedMainModule = "index.js",
     expectedType = "esm",
     expectedBindings,
     expectedModules = {},
@@ -5357,7 +5422,7 @@ function mockUploadWorkerRequest(
         formBody.get("metadata") as string
       ) as WorkerMetadata;
       if (expectedType === "esm") {
-        expect(metadata.main_module).toEqual("index.js");
+        expect(metadata.main_module).toEqual(expectedMainModule);
       } else {
         expect(metadata.body_part).toEqual("index.js");
       }
