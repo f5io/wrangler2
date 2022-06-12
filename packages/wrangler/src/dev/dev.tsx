@@ -39,7 +39,7 @@ export type DevProps = {
   enableLocalPersistence: boolean;
   bindings: CfWorkerInit["bindings"];
   crons: Config["triggers"]["crons"];
-  public: string | undefined;
+  isWorkersSite: boolean;
   assetPaths: AssetPaths | undefined;
   compatibilityDate: string;
   compatibilityFlags: string[] | undefined;
@@ -62,9 +62,13 @@ export function DevImplementation(props: DevProps): JSX.Element {
 
   useCustomBuild(props.entry, props.build);
 
-  if (props.public && props.entry.format === "service-worker") {
+  if (
+    !props.isWorkersSite &&
+    props.assetPaths &&
+    props.entry.format === "service-worker"
+  ) {
     throw new Error(
-      "You cannot use the service-worker format with a `public` directory."
+      "You cannot use the service-worker format with an `assets` directory."
     );
   }
 
@@ -89,11 +93,13 @@ export function DevImplementation(props: DevProps): JSX.Element {
   const bundle = useEsbuild({
     entry: props.entry,
     destination: directory,
-    staticRoot: props.public,
+    staticRoot: props.isWorkersSite
+      ? undefined
+      : props.assetPaths?.assetDirectory,
     jsxFactory: props.jsxFactory,
     rules: props.rules,
     jsxFragment: props.jsxFragment,
-    serveAssetsFromWorker: !!props.public,
+    serveAssetsFromWorker: Boolean(!props.isWorkersSite && props.assetPaths),
     tsconfig: props.tsconfig,
     minify: props.minify,
     nodeCompat: props.nodeCompat,
@@ -161,7 +167,7 @@ function DevSession(props: DevSessionProps) {
       compatibilityFlags={props.compatibilityFlags}
       bindings={props.bindings}
       assetPaths={props.assetPaths}
-      public={props.public}
+      isWorkersSite={props.isWorkersSite}
       port={props.port}
       ip={props.ip}
       rules={props.rules}
@@ -177,7 +183,7 @@ function DevSession(props: DevSessionProps) {
       accountId={props.accountId}
       bindings={props.bindings}
       assetPaths={props.assetPaths}
-      public={props.public}
+      isWorkersSite={props.isWorkersSite}
       port={props.port}
       ip={props.ip}
       localProtocol={props.localProtocol}

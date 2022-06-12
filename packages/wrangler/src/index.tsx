@@ -50,7 +50,7 @@ import {
 } from "./parse";
 import publish from "./publish";
 import { createR2Bucket, deleteR2Bucket, listR2Buckets } from "./r2";
-import { getAssetPaths } from "./sites";
+import { getAssetPaths, getSiteAssetPaths } from "./sites";
 import {
   createTail,
   jsonPrintLogs,
@@ -965,6 +965,27 @@ function createCLIParser(argv: string[]) {
           describe: "Static assets to be served",
           type: "string",
           requiresArg: true,
+          deprecated: true,
+          hidden: true,
+        })
+        .option("assets", {
+          describe: "Static assets to be served",
+          type: "string",
+          requiresArg: true,
+        })
+        .option("assets-include", {
+          describe:
+            "Array of .gitignore-style patterns that match file or directory names from the assets directory. Only matched items will be uploaded.",
+          type: "string",
+          requiresArg: true,
+          array: true,
+        })
+        .option("assets-exclude", {
+          describe:
+            "Array of .gitignore-style patterns that match file or directory names from the assets directory. Matched items will not be uploaded.",
+          type: "string",
+          requiresArg: true,
+          array: true,
         })
         .option("site", {
           describe: "Root folder of static assets for Workers Sites",
@@ -1062,15 +1083,13 @@ function createCLIParser(argv: string[]) {
       }
 
       if (args["experimental-public"]) {
-        logger.warn(
-          "The --experimental-public field is experimental and will change in the future."
+        throw new Error(
+          "The --experimental=public field has been renamed to --assets"
         );
       }
 
       if (args.public) {
-        throw new Error(
-          "The --public field has been renamed to --experimental-public, and will change behaviour in the future."
-        );
+        throw new Error("The --public field has been renamed to --assets");
       }
 
       const upstreamProtocol =
@@ -1175,6 +1194,21 @@ function createCLIParser(argv: string[]) {
         vars: maskedVars,
       });
 
+      const assetPaths =
+        args.assets || config.assets
+          ? getAssetPaths(
+              config,
+              args.assets,
+              args.assetsInclude,
+              args.assetsExclude
+            )
+          : getSiteAssetPaths(
+              config,
+              args.site,
+              args.siteInclude,
+              args.siteExclude
+            );
+
       const { waitUntilExit } = render(
         <Dev
           name={getScriptName(args, config)}
@@ -1197,12 +1231,7 @@ function createCLIParser(argv: string[]) {
             args["experimental-enable-local-persistence"] || false
           }
           accountId={config.account_id}
-          assetPaths={getAssetPaths(
-            config,
-            args.site,
-            args.siteInclude,
-            args.siteExclude
-          )}
+          assetPaths={assetPaths}
           port={
             args.port ||
             config.dev.port ||
@@ -1212,7 +1241,7 @@ function createCLIParser(argv: string[]) {
           inspectorPort={
             args["inspector-port"] ?? (await getPort({ port: 9229 }))
           }
-          public={args["experimental-public"]}
+          isWorkersSite={!(args.assets || config.assets)}
           compatibilityDate={getDevCompatibilityDate(
             config,
             args["compatibility-date"]
@@ -1282,6 +1311,27 @@ function createCLIParser(argv: string[]) {
           describe: "Static assets to be served",
           type: "string",
           requiresArg: true,
+          deprecated: true,
+          hidden: true,
+        })
+        .option("assets", {
+          describe: "Static assets to be served",
+          type: "string",
+          requiresArg: true,
+        })
+        .option("assets-include", {
+          describe:
+            "Array of .gitignore-style patterns that match file or directory names from the assets directory. Only matched items will be uploaded.",
+          type: "string",
+          requiresArg: true,
+          array: true,
+        })
+        .option("assets-exclude", {
+          describe:
+            "Array of .gitignore-style patterns that match file or directory names from the assets directory. Matched items will not be uploaded.",
+          type: "string",
+          requiresArg: true,
+          array: true,
         })
         .option("site", {
           describe: "Root folder of static assets for Workers Sites",
@@ -1352,14 +1402,12 @@ function createCLIParser(argv: string[]) {
     async (args) => {
       await printWranglerBanner();
       if (args["experimental-public"]) {
-        logger.warn(
-          "The --experimental-public field is experimental and will change in the future."
+        throw new Error(
+          "The --experimental-public field has been renamed to --assets"
         );
       }
       if (args.public) {
-        throw new Error(
-          "The --public field has been renamed to --experimental-public, and will change behaviour in the future."
-        );
+        throw new Error("The --public field has been renamed to --assets");
       }
 
       const configPath =
@@ -1376,12 +1424,20 @@ function createCLIParser(argv: string[]) {
 
       const accountId = args.dryRun ? undefined : await requireAuth(config);
 
-      const assetPaths = getAssetPaths(
-        config,
-        args["experimental-public"] || args.site,
-        args.siteInclude,
-        args.siteExclude
-      );
+      const assetPaths =
+        args.assets || config.assets
+          ? getAssetPaths(
+              config,
+              args.assets,
+              args.assetsInclude,
+              args.assetsExclude
+            )
+          : getSiteAssetPaths(
+              config,
+              args.site,
+              args.siteInclude,
+              args.siteExclude
+            );
 
       await publish({
         config,
@@ -1403,7 +1459,7 @@ function createCLIParser(argv: string[]) {
         legacyEnv: isLegacyEnv(config),
         minify: args.minify,
         nodeCompat: args.nodeCompat,
-        experimentalPublic: args["experimental-public"] !== undefined,
+        isWorkersSite: !(args.assets || config.assets),
         outDir: args.outdir,
         dryRun: args.dryRun,
       });
@@ -1628,7 +1684,7 @@ function createCLIParser(argv: string[]) {
             config.dev.port || (await getPort({ port: DEFAULT_LOCAL_PORT }))
           }
           ip={config.dev.ip}
-          public={undefined}
+          isWorkersSite={true}
           compatibilityDate={getDevCompatibilityDate(config)}
           compatibilityFlags={config.compatibility_flags}
           usageModel={config.usage_model}

@@ -22,7 +22,7 @@ interface LocalProps {
   compatibilityFlags: string[] | undefined;
   bindings: CfWorkerInit["bindings"];
   assetPaths: AssetPaths | undefined;
-  public: string | undefined;
+  isWorkersSite: boolean;
   port: number;
   ip: string;
   rules: Config["rules"];
@@ -49,7 +49,7 @@ function useLocalWorker({
   compatibilityFlags,
   bindings,
   assetPaths,
-  public: publicDirectory,
+  isWorkersSite,
   port,
   rules,
   enableLocalPersistence,
@@ -82,9 +82,9 @@ function useLocalWorker({
         abortSignal: abortController.signal,
       });
 
-      if (publicDirectory) {
+      if (!isWorkersSite && assetPaths) {
         throw new Error(
-          '⎔ A "public" folder is not yet supported in local mode.'
+          '⎔ An "assets" folder is not yet supported in local mode.'
         );
       }
       if (bindings.services && bindings.services.length > 0) {
@@ -307,7 +307,7 @@ function useLocalWorker({
     compatibilityFlags,
     localPersistencePath,
     assetPaths,
-    publicDirectory,
+    isWorkersSite,
     rules,
     bindings.wasm_modules,
     bindings.text_blobs,
