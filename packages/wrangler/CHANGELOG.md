@@ -1,5 +1,44 @@
 # wrangler
 
+## 2.0.12
+
+### Patch Changes
+
+- [#1248](https://github.com/cloudflare/wrangler2/pull/1248) [`db8a0bb`](https://github.com/cloudflare/wrangler2/commit/db8a0bba1f070bce870016a9aecc8b30725694f4) Thanks [@threepointone](https://github.com/threepointone)! - fix: instruct api to exclude script content on worker upload
+
+  When we upload a script bundle, we get the actual content of the script back in the response. Sometimes that script can be large (depending on whether the upload was large), and currently it may even be a badly escaped string. We can pass a queryparam `excludeScript` that, as it implies, exclude the script content in the response. This fix does that.
+
+  Fixes https://github.com/cloudflare/wrangler2/issues/1222
+
+* [#1250](https://github.com/cloudflare/wrangler2/pull/1250) [`e3278fa`](https://github.com/cloudflare/wrangler2/commit/e3278fa9ad15fc0f34322c32eb4bdd557b40c413) Thanks [@rozenmd](https://github.com/rozenmd)! - fix: pass localProtocol to miniflare for https server
+
+  Closes #1247
+
+- [#1236](https://github.com/cloudflare/wrangler2/pull/1236) [`891d128`](https://github.com/cloudflare/wrangler2/commit/891d12802c413438b4ce837785abee792e317de1) Thanks [@threepointone](https://github.com/threepointone)! - fix: generate site assets manifest relative to `site.bucket`
+
+  We had a bug where we were generating asset manifest keys incorrectly if we ran wrangler from a different path to `wrangler.toml`. This fixes the generation of said keys, and adds a test for it.
+
+  Fixes #1235
+
+* [#1216](https://github.com/cloudflare/wrangler2/pull/1216) [`4eb70f9`](https://github.com/cloudflare/wrangler2/commit/4eb70f906666806250eeb709efa70118df57f2df) Thanks [@JacobMGEvans](https://github.com/JacobMGEvans)! - feat: reload server on configuration changes, the values passed into the server during restart will be `bindings`
+
+  resolves #439
+
+- [#1231](https://github.com/cloudflare/wrangler2/pull/1231) [`5206c24`](https://github.com/cloudflare/wrangler2/commit/5206c24630b64a5c398194fd680faa67a5a23c9a) Thanks [@threepointone](https://github.com/threepointone)! - feat: `build.watch_dir` can be an array of paths
+
+  In projects where:
+
+  - all the source code isn't in one folder (like a monorepo, or even where the worker has non-standard imports across folders),
+  - we use a custom build, so it's hard to statically determine folders to watch for changes
+
+  ...we'd like to be able to specify multiple paths for custom builds, (the config `build.watch_dir` config). This patch enables such behaviour. It now accepts a single path as before, or optionally an array of strings/paths.
+
+  Fixes https://github.com/cloudflare/wrangler2/issues/1095
+
+* [#1241](https://github.com/cloudflare/wrangler2/pull/1241) [`471cfef`](https://github.com/cloudflare/wrangler2/commit/471cfeffc70088d5db2bdb132357d4dbfedde353) Thanks [@threepointone](https://github.com/threepointone)! - use `@cloudflare/kv-asset-handler` for `--experimental-public`
+
+  We'd previously vendored in `@cloudflare/kv-asset-handler` and `mime` for `--experimental-public`. We've since updated `@cloudflare/kv-asset-handler` to support module workers correctly, and don't need the vendored versions anymore. This patch uses the lib as a dependency, and deletes the `vendor` folder.
+
 ## 2.0.11
 
 ### Patch Changes
